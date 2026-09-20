@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:apps="http://schemas.google.com/apps/2006">
+  <title>The Pass website inquiry filter</title>
+  <entry>
+    <category term="filter" />
+    <title>Mail Filter</title>
+    <apps:property name="to" value="michaelpark20783@gmail.com" />
+    <apps:property name="subject" value="&quot;The Pass website&quot;" />
+    <apps:property name="label" value="The Pass/Website inquiries" />
+    <apps:property name="shouldArchive" value="false" />
+    <apps:property name="shouldMarkAsRead" value="false" />
+  </entry>
+</feed>
