@@ -19,7 +19,8 @@ The page works without an email account. A form submission shows an honest confi
 ## Included
 
 - Responsive homepage with expertise, approach, illustrative deliverables, founder introduction, FAQs, and an inquiry form.
-- Original ivory/forest/brass identity, frosted surfaces, and an interactive architectural sculpture. Three.js loads separately; the sculpture renders on demand, observes reduced-motion preferences, and falls back to a static SVG when WebGL is unavailable.
+- Editorial ivory/forest/brass design with open service rows, overlapping chapters, a sticky desktop process narrative, and short headline entrances. Native scrolling remains intact; reduced-motion preferences disable choreography.
+- Original interactive Three.js place setting with ceramic, brass, and glass. Three.js loads separately; the scene renders on demand and falls back to an original static SVG when WebGL is unavailable.
 - Keyboard navigation, skip link, visible focus, labeled fields, inline validation, preserved inputs after failures, and accepted-for-sending confirmation.
 - Server-side Resend endpoint with fixed recipient `michaelpark20783@gmail.com`, reply-to routing, bounded input, origin checks, honeypot, provider timeout, and retry idempotency.
 - Contact privacy page, custom 404, favicon, generated social image, sitemap, and robots metadata. Preview deployments are marked noindex. A valid HTTPS `SITE_URL` enables production sitemap URLs.
@@ -53,7 +54,8 @@ See [email and Gmail setup](docs/email-setup.md) for exact steps and [design not
 | --- | --- |
 | `src/app/page.tsx` | Public page content and sections |
 | `src/app/globals.css` | Palette, typography, layout, responsive styles |
-| `src/components/PassSculpture.tsx` | Three.js sculpture and SVG fallback |
+| `src/components/PassSculpture.tsx` | Three.js place setting and SVG fallback |
+| `src/components/ScrollSequence.tsx` | Progressive headline entrances and scroll-linked scene/progress |
 | `src/components/InquiryForm.tsx` | Form states and accessible validation |
 | `src/lib/inquiry.ts` | Server validation and email delivery |
 | `src/app/api/inquiry/route.ts` | Next.js endpoint and environment boundary |

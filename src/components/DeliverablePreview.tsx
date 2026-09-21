@@ -21,8 +21,8 @@ export default function DeliverablePreview() {
       <div className={`document-preview document-${item.id}`} aria-hidden="true">
         <div className="document-heading"><span>THE PASS</span><span>FIELDNOTES / 0{active + 1}</span></div>
         <div className="document-body"><small>YOUR RESTAURANT</small><h4>{active === 0 ? "See the pattern." : active === 1 ? "Make the next move." : "Bring it into focus."}</h4>
-          {active === 0 ? <><div className="sample-chart">{[35, 52, 46, 72, 61, 89, 76, 57, 83, 92, 64, 79].map((height, index) => <i style={{ height: `${height}%` }} key={index} />)}</div><div className="document-rule" /><div className="document-lines"><i /><i /><i /></div></> : active === 1 ? <div className="sample-roadmap">{["Understand", "Prioritize", "Put into practice"].map((label, i) => <div key={label}><span>0{i + 1}</span><strong>{label}</strong><i /></div>)}</div> : <div className="sample-readout"><div className="readout-ring"><span>Evidence<br /><em>+ context</em></span></div><div className="document-lines"><i /><i /></div></div>}
-        </div><div className="document-footer"><span>THOUGHTFUL ANALYSIS. CLEAR DIRECTION.</span><span>↗</span></div>
+          <div className="document-contents">{(active === 0 ? ["The operating questions", "Evidence & assumptions", "Priorities to discuss"] : active === 1 ? ["Actions & dependencies", "Owners & responsibilities", "Measures to revisit"] : ["Findings & context", "Options & trade-offs", "Agreed next steps"]).map((label, i) => <div key={label}>{label}<span>0{i + 1}</span></div>)}</div>
+        </div><div className="document-footer"><span>ENGAGEMENT OUTLINE</span><span>THE PASS</span></div>
       </div>
     </div>
     <p className="illustration-note">Illustrative document layouts. Your engagement is scoped to your business.</p>
