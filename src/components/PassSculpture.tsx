@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type * as Three from "three";
 
-/** A decorative, demand-rendered sculpture. No information depends on WebGL. */
+/** A decorative, demand-rendered place setting. No information depends on WebGL. */
 export default function PassSculpture() {
   const hostRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
@@ -77,7 +77,7 @@ export default function PassSculpture() {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = 0.9;
       renderer.shadowMap.enabled = false;
       renderer.domElement.setAttribute("aria-hidden", "true");
       Object.assign(renderer.domElement.style, {
@@ -90,8 +90,8 @@ export default function PassSculpture() {
 
       const scene = new THREE.Scene();
       const camera = new THREE.OrthographicCamera(-3, 3, 3, -3, 0.1, 40);
-      camera.position.set(5.4, 3.3, 9.3);
-      camera.lookAt(0, -0.12, 0.2);
+      camera.position.set(0.3, 7.2, 7.4);
+      camera.lookAt(0, 0.12, -0.12);
 
       // A local studio reflection map gives the metal and glass broad highlights.
       const studio = document.createElement("canvas");
@@ -100,16 +100,16 @@ export default function PassSculpture() {
       const context = studio.getContext("2d");
       if (context) {
         const wash = context.createLinearGradient(0, 0, 0, 256);
-        wash.addColorStop(0, "#e7e9e3");
-        wash.addColorStop(0.45, "#a9b2a3");
-        wash.addColorStop(0.7, "#7a8477");
-        wash.addColorStop(1, "#dfd7c4");
+        wash.addColorStop(0, "#77786a");
+        wash.addColorStop(0.4, "#404d3f");
+        wash.addColorStop(0.65, "#132d22");
+        wash.addColorStop(1, "#0d211a");
         context.fillStyle = wash;
         context.fillRect(0, 0, 512, 256);
         for (const [x, y, width, height] of [
-          [65, 20, 74, 135],
-          [285, 30, 115, 85],
-          [460, 70, 35, 125],
+          [45, 12, 94, 115],
+          [302, 30, 22, 130],
+          [452, 44, 10, 130],
         ]) {
           context.fillStyle = "#fffdf4";
           context.fillRect(x, y, width, height);
@@ -122,18 +122,18 @@ export default function PassSculpture() {
         try {
           environment = pmrem.fromEquirectangular(studioTexture);
           scene.environment = environment.texture;
-          scene.environmentIntensity = 0.9;
+          scene.environmentIntensity = 0.65;
         } finally {
           pmrem.dispose();
         }
       }
 
-      scene.add(new THREE.HemisphereLight(0xfffbef, 0x435749, 2.3));
-      const key = new THREE.DirectionalLight(0xfff4dd, 3.2);
-      key.position.set(-4, 7, 5);
+      scene.add(new THREE.HemisphereLight(0xfffae8, 0x132d24, 0.55));
+      const key = new THREE.DirectionalLight(0xfff5e6, 2.45);
+      key.position.set(-5, 4, 2);
       scene.add(key);
-      const fill = new THREE.DirectionalLight(0xe0edeb, 2.2);
-      fill.position.set(4, 2, -3);
+      const fill = new THREE.DirectionalLight(0xdeeadf, 0.4);
+      fill.position.set(4, 3, -4);
       scene.add(fill);
 
       function material<T extends Three.Material>(value: T): T {
@@ -146,149 +146,190 @@ export default function PassSculpture() {
         return value;
       }
 
-      const forest = material(
+      const ceramic = material(
         new THREE.MeshPhysicalMaterial({
-          color: 0x214536,
-          roughness: 0.35,
-          metalness: 0.22,
-          clearcoat: 0.35,
-          clearcoatRoughness: 0.3,
+          color: 0xe8dfcb,
+          roughness: 0.36,
+          metalness: 0,
+          clearcoat: 0.28,
+          clearcoatRoughness: 0.27,
         }),
       );
       const brass = material(
         new THREE.MeshStandardMaterial({
-          color: 0xb9a477,
-          metalness: 0.87,
-          roughness: 0.28,
+          color: 0xbba272,
+          metalness: 0.9,
+          roughness: 0.21,
         }),
       );
       const glass = material(
         new THREE.MeshPhysicalMaterial({
-          color: 0xd6e2d3,
-          roughness: 0.13,
-          metalness: 0,
-          transmission: 0.87,
-          thickness: 0.65,
-          ior: 1.46,
-          attenuationColor: new THREE.Color(0xb5c6a7),
-          attenuationDistance: 2.6,
+          color: 0xc8dac9,
+          roughness: 0.12,
+          metalness: 0.05,
+          transparent: true,
+          opacity: 0.18,
+          side: THREE.DoubleSide,
+          depthWrite: false,
           clearcoat: 1,
-          clearcoatRoughness: 0.1,
+          clearcoatRoughness: 0.12,
         }),
       );
-      const stone = material(
-        new THREE.MeshStandardMaterial({
-          color: 0xe2dece,
-          roughness: 0.75,
-          metalness: 0.03,
+      const glassEdge = material(
+        new THREE.MeshPhysicalMaterial({
+          color: 0xe2e8d6,
+          roughness: 0.16,
+          metalness: 0.2,
+          transparent: true,
+          opacity: 0.5,
+          depthWrite: false,
+          clearcoat: 1,
         }),
       );
 
       const sculpture = new THREE.Group();
-      const restingX = -0.015;
-      const restingY = -0.18;
-      sculpture.rotation.set(restingX, restingY, 0.025);
+      const restingX = 0;
+      const restingY = -0.28;
+      sculpture.rotation.set(restingX, restingY, 0);
       scene.add(sculpture);
 
-      function arch(
-        width: number,
-        height: number,
-        band: number,
-        depth: number,
-        surface: Three.Material,
-        bevel = 0.045,
-      ) {
-        const outer = width / 2;
-        const inner = outer - band;
-        const bottom = -height / 2;
-        const shoulder = height / 2 - outer;
-        const shape = new THREE.Shape();
-        shape.moveTo(-outer, bottom);
-        shape.lineTo(-outer, shoulder);
-        shape.absarc(0, shoulder, outer, Math.PI, 0, true);
-        shape.lineTo(outer, bottom);
-        shape.lineTo(inner, bottom);
-        shape.lineTo(inner, shoulder);
-        shape.absarc(0, shoulder, inner, 0, Math.PI, false);
-        shape.lineTo(-inner, bottom);
-        shape.closePath();
-        const solid = geometry(
-          new THREE.ExtrudeGeometry(shape, {
-            depth,
-            bevelEnabled: bevel > 0,
-            bevelSegments: 3,
-            steps: 1,
-            bevelSize: bevel,
-            bevelThickness: bevel,
-            curveSegments: 56,
-          }),
+      function turned(profile: number[][], surface: Three.Material, segments = 96) {
+        return new THREE.Mesh(
+          geometry(new THREE.LatheGeometry(profile.map(([radius, height]) => new THREE.Vector2(radius, height)), segments)),
+          surface,
         );
-        solid.translate(0, 0, -depth / 2);
-        return new THREE.Mesh(solid, surface);
       }
 
-      const outerArch = arch(3.1, 3.6, 0.47, 0.66, forest);
-      outerArch.position.z = -0.35;
-      sculpture.add(outerArch);
+      function ring(radius: number, tube: number, height: number, surface: Three.Material, parent: Three.Group) {
+        const mesh = new THREE.Mesh(geometry(new THREE.TorusGeometry(radius, tube, 8, 96)), surface);
+        mesh.rotation.x = Math.PI / 2;
+        mesh.position.y = height;
+        parent.add(mesh);
+      }
 
-      const inlay = arch(3.05, 3.57, 0.025, 0.018, brass, 0.005);
-      inlay.position.set(0, -0.015, 0.026);
-      sculpture.add(inlay);
+      // Concentric details belong to one continuous surface, avoiding intersecting rings.
+      const plate = new THREE.Group();
+      plate.position.set(-0.12, 0, 0.35);
+      plate.add(turned([
+        [0, 0.025], [0.7, 0.025], [0.76, 0.045], [0.92, 0.06],
+        [1.13, 0.09], [1.47, 0.23], [1.78, 0.33], [1.84, 0.348],
+        [1.858, 0.366], [1.86, 0.384], [1.847, 0.402], [1.823, 0.411],
+        [1.8, 0.405], [1.783, 0.392], [1.755, 0.384], [1.713, 0.375],
+        [1.69, 0.377], [1.672, 0.368], [1.657, 0.352], [1.61, 0.331],
+        [1.47, 0.264], [1.31, 0.176], [1.23, 0.133], [1.18, 0.111],
+        [1.15, 0.105], [1.13, 0.097], [1.11, 0.092], [1.07, 0.09],
+        [0.78, 0.087], [0, 0.087],
+      ], ceramic, 128));
+      sculpture.add(plate);
 
-      const glassArch = arch(2.13, 3.05, 0.27, 0.37, glass, 0.035);
-      glassArch.position.set(0.02, -0.275, 0.47);
-      glassArch.rotation.y = 0.13;
-      sculpture.add(glassArch);
+      function flatware(shape: Three.Shape, depth = 0.025) {
+        const mesh = new THREE.Mesh(geometry(new THREE.ExtrudeGeometry(shape, {
+          depth, steps: 1, bevelEnabled: true, bevelSegments: 3,
+          bevelSize: 0.014, bevelThickness: 0.012, curveSegments: 14,
+        })), brass);
+        mesh.rotation.x = -Math.PI / 2;
+        return mesh;
+      }
 
-      const innerArch = arch(1.39, 2.42, 0.14, 0.24, brass, 0.025);
-      innerArch.position.set(-0.055, -0.59, 1.04);
-      innerArch.rotation.y = -0.14;
-      sculpture.add(innerArch);
+      const fork = new THREE.Group();
+      fork.position.set(-2.25, 0.06, 0.43);
+      function handle() {
+        const mesh = turned([
+          [0, -1.2], [0.039, -1.2], [0.064, -1.185], [0.07, -1.15],
+          [0.065, -0.86], [0.054, -0.42], [0.044, 0.04], [0.045, 0.26], [0, 0.27],
+        ], brass, 24);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.scale.z = 0.48;
+        mesh.position.y = 0.019;
+        return mesh;
+      }
+      fork.add(handle());
+      const forkBody = new THREE.Shape();
+      forkBody.moveTo(-0.041, 0.12);
+      forkBody.lineTo(-0.046, 0.21);
+      forkBody.bezierCurveTo(-0.053, 0.34, -0.18, 0.34, -0.18, 0.48);
+      forkBody.lineTo(-0.18, 0.69);
+      forkBody.lineTo(0.18, 0.69);
+      forkBody.lineTo(0.18, 0.48);
+      forkBody.bezierCurveTo(0.18, 0.34, 0.053, 0.34, 0.046, 0.21);
+      forkBody.lineTo(0.041, 0.12);
+      forkBody.closePath();
+      fork.add(flatware(forkBody));
+      for (const x of [-0.148, -0.05, 0.05, 0.148]) {
+        const tine = new THREE.Shape();
+        tine.moveTo(x - 0.024, 0.64);
+        tine.lineTo(x - 0.018, 1.16);
+        tine.quadraticCurveTo(x, 1.21, x + 0.018, 1.16);
+        tine.lineTo(x + 0.024, 0.64);
+        tine.closePath();
+        fork.add(flatware(tine, 0.018));
+      }
+      sculpture.add(fork);
 
-      const plinth = new THREE.Mesh(
-        geometry(new THREE.CylinderGeometry(2.08, 2.12, 0.12, 96)),
-        stone,
-      );
-      plinth.scale.z = 0.82;
-      plinth.position.set(0, -1.88, 0.2);
-      sculpture.add(plinth);
+      const knifeShape = new THREE.Shape();
+      knifeShape.moveTo(-0.04, 0.1);
+      knifeShape.lineTo(-0.052, 0.98);
+      knifeShape.quadraticCurveTo(-0.05, 1.2, 0.015, 1.23);
+      knifeShape.bezierCurveTo(0.16, 1.17, 0.2, 0.81, 0.185, 0.41);
+      knifeShape.quadraticCurveTo(0.18, 0.22, 0.058, 0.15);
+      knifeShape.lineTo(0.04, 0.1);
+      knifeShape.closePath();
+      const knife = new THREE.Group();
+      knife.add(flatware(knifeShape), handle());
+      knife.position.set(2.12, 0.06, 0.44);
+      sculpture.add(knife);
 
-      const plinthEdge = new THREE.Mesh(
-        geometry(new THREE.CylinderGeometry(2.105, 2.105, 0.018, 96)),
-        brass,
-      );
-      plinthEdge.scale.z = 0.82;
-      plinthEdge.position.set(0, -1.954, 0.2);
-      sculpture.add(plinthEdge);
+      const tumbler = new THREE.Group();
+      tumbler.position.set(1.14, 0.015, -1.69);
+      tumbler.add(turned([
+        [0, 0.025], [0.35, 0.025], [0.4, 0.045], [0.412, 0.09],
+        [0.449, 0.86], [0.448, 0.89], [0.432, 0.903], [0.415, 0.889],
+        [0.413, 0.86], [0.376, 0.15], [0.35, 0.116], [0, 0.116],
+      ], glass));
+      ring(0.432, 0.015, 0.891, glassEdge, tumbler);
+      ring(0.393, 0.014, 0.068, glassEdge, tumbler);
+      ring(0.357, 0.008, 0.12, glassEdge, tumbler);
+      const fluteGeometry = geometry(new THREE.CylinderGeometry(0.009, 0.009, 0.69, 6));
+      for (let i = 0; i < 20; i += 1) {
+        const angle = i * Math.PI / 10;
+        const flute = new THREE.Mesh(fluteGeometry, glass);
+        flute.position.set(Math.sin(angle) * 0.417, 0.48, Math.cos(angle) * 0.417);
+        flute.rotation.z = -Math.sin(angle) * 0.045;
+        flute.rotation.x = Math.cos(angle) * 0.045;
+        tumbler.add(flute);
+      }
+      sculpture.add(tumbler);
 
-      // A finite contact shadow grounds the plinth without extra shadow passes.
+      // Soft contact shadows blend into the CSS surface without a rectangular ground.
       const shadowCanvas = document.createElement("canvas");
       shadowCanvas.width = 256;
       shadowCanvas.height = 256;
       const shadowContext = shadowCanvas.getContext("2d");
       if (shadowContext) {
-        const falloff = shadowContext.createRadialGradient(128, 128, 20, 128, 128, 126);
-        falloff.addColorStop(0, "rgba(34, 49, 38, 0.26)");
-        falloff.addColorStop(0.4, "rgba(34, 49, 38, 0.2)");
-        falloff.addColorStop(0.7, "rgba(34, 49, 38, 0.08)");
-        falloff.addColorStop(1, "rgba(34, 49, 38, 0)");
+        const falloff = shadowContext.createRadialGradient(128, 128, 12, 128, 128, 125);
+        falloff.addColorStop(0, "rgba(0, 12, 7, 0.48)");
+        falloff.addColorStop(0.5, "rgba(0, 12, 7, 0.3)");
+        falloff.addColorStop(0.78, "rgba(0, 12, 7, 0.11)");
+        falloff.addColorStop(1, "rgba(0, 12, 7, 0)");
         shadowContext.fillStyle = falloff;
         shadowContext.fillRect(0, 0, 256, 256);
         const contactTexture = new THREE.CanvasTexture(shadowCanvas);
         contactTexture.colorSpace = THREE.SRGBColorSpace;
         textures.add(contactTexture);
-        const contactShadow = new THREE.Mesh(
-          geometry(new THREE.PlaneGeometry(6.2, 4.8)),
-          material(new THREE.MeshBasicMaterial({
-            map: contactTexture,
-            transparent: true,
-            depthWrite: false,
-            toneMapped: false,
-          })),
-        );
-        contactShadow.rotation.x = -Math.PI / 2;
-        contactShadow.position.set(0, -2.04, 0.25);
-        scene.add(contactShadow);
+        const shadowMaterial = material(new THREE.MeshBasicMaterial({
+          map: contactTexture, transparent: true, depthWrite: false, toneMapped: false,
+        }));
+        const shadowGeometry = geometry(new THREE.PlaneGeometry(1, 1));
+        for (const [x, z, width, depth] of [
+          [-0.04, 0.48, 4.7, 4.55], [1.25, -1.56, 1.25, 1.28],
+          [-2.22, 0.48, 0.35, 2.7], [2.16, 0.5, 0.38, 2.7],
+        ]) {
+          const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+          shadow.rotation.x = -Math.PI / 2;
+          shadow.position.set(x, -0.02, z);
+          shadow.scale.set(width, depth, 1);
+          sculpture.add(shadow);
+        }
       }
 
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -337,7 +378,7 @@ export default function PassSculpture() {
         const { width, height } = host.getBoundingClientRect();
         if (!width || !height) return;
         const aspect = width / height;
-        const viewHeight = Math.max(5.35, 4.8 / aspect);
+        const viewHeight = Math.max(4.75, 5.65 / aspect);
         camera.left = (-viewHeight * aspect) / 2;
         camera.right = (viewHeight * aspect) / 2;
         camera.top = viewHeight / 2;
@@ -353,8 +394,8 @@ export default function PassSculpture() {
         if (!bounds.width || !bounds.height) return;
         const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - 0.5) * 2));
         const y = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height - 0.5) * 2));
-        targetY = restingY + x * 0.17;
-        targetX = restingX + y * 0.065;
+        targetY = restingY + x * 0.075;
+        targetX = restingX + y * 0.035;
         requestDraw();
       }
 
@@ -448,40 +489,63 @@ export default function PassSculpture() {
       style={{ position: "relative", width: "100%", height: "100%", isolation: "isolate" }}
     >
       <svg
-        viewBox="0 0 600 560"
+        viewBox="0 0 600 640"
         focusable="false"
         style={{ width: "100%", height: "100%", display: "block", visibility: ready ? "hidden" : "visible" }}
       >
         <defs>
-          <linearGradient id={`${id}-forest`} x1="0" y1="0" x2="1" y2="0.8">
-            <stop stopColor="#527260" />
-            <stop offset="0.42" stopColor="#254b3b" />
-            <stop offset="1" stopColor="#112f25" />
+          <linearGradient id={`${id}-ceramic`} x1="0" y1="0" x2="0.8" y2="1">
+            <stop stopColor="#fffdf0" />
+            <stop offset="0.42" stopColor="#eee8d7" />
+            <stop offset="0.83" stopColor="#ddd6c4" />
+            <stop offset="1" stopColor="#c8c3b0" />
           </linearGradient>
-          <linearGradient id={`${id}-brass`} x1="0" y1="0" x2="1" y2="0.4">
-            <stop stopColor="#d9c69d" />
-            <stop offset="0.5" stopColor="#a99062" />
-            <stop offset="0.73" stopColor="#e3d3ad" />
-            <stop offset="1" stopColor="#aa956b" />
+          <radialGradient id={`${id}-well`} cx="0.34" cy="0.28" r="0.8">
+            <stop stopColor="#f3eddf" />
+            <stop offset="0.8" stopColor="#e8e2d2" />
+            <stop offset="1" stopColor="#dbd4c1" />
+          </radialGradient>
+          <linearGradient id={`${id}-brass`} x1="0" y1="0" x2="1" y2="0.1">
+            <stop stopColor="#81724d" />
+            <stop offset="0.3" stopColor="#c8b280" />
+            <stop offset="0.54" stopColor="#e1cca0" />
+            <stop offset="0.7" stopColor="#ad986b" />
+            <stop offset="1" stopColor="#7e704e" />
           </linearGradient>
-          <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="1" y2="0.6">
-            <stop stopColor="#e2e9de" stopOpacity="0.9" />
-            <stop offset="0.5" stopColor="#acbca7" stopOpacity="0.38" />
-            <stop offset="1" stopColor="#c6d1bd" stopOpacity="0.76" />
+          <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="1" y2="0">
+            <stop stopColor="#dce7d6" stopOpacity="0.24" />
+            <stop offset="0.19" stopColor="#f5f3dd" stopOpacity="0.4" />
+            <stop offset="0.4" stopColor="#aec5ad" stopOpacity="0.06" />
+            <stop offset="0.8" stopColor="#b9c9af" stopOpacity="0.12" />
+            <stop offset="1" stopColor="#e4e8d1" stopOpacity="0.45" />
           </linearGradient>
           <radialGradient id={`${id}-shadow`}>
-            <stop stopColor="#23382c" stopOpacity="0.16" />
-            <stop offset="1" stopColor="#23382c" stopOpacity="0" />
+            <stop stopColor="#071e14" stopOpacity="0.6" />
+            <stop offset="0.6" stopColor="#071e14" stopOpacity="0.3" />
+            <stop offset="1" stopColor="#071e14" stopOpacity="0" />
           </radialGradient>
         </defs>
-        <ellipse cx="308" cy="466" rx="226" ry="45" fill={`url(#${id}-shadow)`} />
-        <path d="M105 423 A196 49 0 0 0 497 423 L497 433 A196 49 0 0 1 105 433Z" fill="#c5c0ac" />
-        <ellipse cx="301" cy="423" rx="196" ry="49" fill="#e4e0d3" />
-        <path d="M177 415V228 A136 136 0 0 1 449 228V415L410 425V228 A97 97 0 0 0 216 228V425Z" fill="#14372b" />
-        <path d="M150 405V215 A136 136 0 0 1 422 215V405H379V215 A93 93 0 0 0 193 215V405Z" fill={`url(#${id}-forest)`} />
-        <path d="M156 401V215 A130 130 0 0 1 416 215V401" fill="none" stroke={`url(#${id}-brass)`} strokeWidth="2" />
-        <path d="M207 423V262 A104 104 0 0 1 415 262V423H387V262 A76 76 0 0 0 235 262V423Z" fill={`url(#${id}-glass)`} stroke="#f6f7eb" strokeOpacity="0.62" />
-        <path d="M261 435V304 A70 70 0 0 1 401 304V435H385V304 A54 54 0 0 0 277 304V435Z" fill={`url(#${id}-brass)`} />
+        <g transform="rotate(-14 300 325)">
+          <ellipse cx="298" cy="376" rx="227" ry="180" fill={`url(#${id}-shadow)`} />
+          <ellipse cx="291" cy="349" rx="190" ry="153" fill="#bbb9a5" />
+          <ellipse cx="289" cy="339" rx="190" ry="153" fill={`url(#${id}-ceramic)`} />
+          <ellipse cx="289" cy="338" rx="183" ry="147" fill="none" stroke="#fffbea" strokeWidth="1.8" opacity="0.72" />
+          <ellipse cx="289" cy="338" rx="175" ry="140" fill="none" stroke="#c9c2ad" strokeWidth="0.8" />
+          <ellipse cx="289" cy="338" rx="171" ry="137" fill="none" stroke="#fff9e7" strokeWidth="1" opacity="0.8" />
+          <ellipse cx="289" cy="342" rx="120" ry="96" fill={`url(#${id}-well)`} stroke="#d7cfba" strokeWidth="1.5" />
+          <ellipse cx="289" cy="343" rx="116" ry="92" fill="none" stroke="#f6f0df" strokeWidth="1.2" />
+
+          <path d="M64 466C59 465 60 449 62 424L65 350C65 343 50 341 50 327V273Q50 268 54 270L57 309H60L62 268Q65 265 67 268L69 309H73L75 268Q78 265 80 268L82 309H86L88 270Q91 268 92 273V327C92 340 77 343 77 350L80 424C82 450 84 465 79 466Z" fill={`url(#${id}-brass)`} />
+          <path d="M509 467C505 467 506 446 507 425L509 274Q510 265 516 269C530 282 531 305 531 328Q531 342 519 347L520 425C522 446 523 467 519 467Z" fill={`url(#${id}-brass)`} />
+
+          <ellipse cx="422" cy="204" rx="63" ry="41" fill={`url(#${id}-shadow)`} />
+          <path d="M376 131L382 208C383 228 455 228 456 208L462 131Z" fill={`url(#${id}-glass)`} stroke="#c3d0b7" strokeOpacity="0.22" strokeWidth="1.2" />
+          <ellipse cx="419" cy="131" rx="43" ry="29" fill="#bdd1bc" fillOpacity="0.04" stroke="#e4e5ce" strokeOpacity="0.65" strokeWidth="2" />
+          <ellipse cx="419" cy="132" rx="39" ry="25" fill="none" stroke="#d9e4cf" strokeOpacity="0.2" />
+          <ellipse cx="419" cy="206" rx="36" ry="24" fill="#d2dec3" fillOpacity="0.08" stroke="#ced9bd" strokeOpacity="0.5" strokeWidth="1.5" />
+          <path d="M384 145L389 207M393 154L397 218M405 159L407 226M419 161V229M433 159L431 225M446 152L442 218M455 143L449 207" fill="none" stroke="#e0e7ce" strokeOpacity="0.18" strokeWidth="1.4" />
+          <path d="M389 150L393 199" fill="none" stroke="#fff9df" strokeOpacity="0.47" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
       </svg>
     </div>
   );
