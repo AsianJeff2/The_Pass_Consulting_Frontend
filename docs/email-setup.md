@@ -1,0 +1,58 @@
+# Website inquiries and Gmail
+
+The form posts to this site's `/api/inquiry` route. The server validates the submission and sends a plain-text email through Resend to **michaelpark20783@gmail.com**. Visitors cannot choose a recipient. Every subject starts with `[The Pass website]`; the visitor's address becomes `reply_to`, so Michael can reply from Gmail.
+
+The code is ready for configuration. It does not connect a Google account, create a Gmail filter, verify a sending domain, or prove inbox delivery by itself. No live email is sent by the automated tests. The endpoint returns `{ "ok": true }` only when Resend returns a successful response containing an email ID. Provider acceptance does not guarantee inbox placement; the email can still bounce or be filtered later.
+
+## Configure Resend and Vercel
+
+1. In Resend, add a sending domain you control and install the verification DNS records. Wait for verification. Use a dedicated sender such as `The Pass <inquiries@your-domain.com>`; do not use the visitor's email or a Gmail address as the sender.
+2. Create a Resend API key with sending access, scoped to that domain when available. Keep the key in Vercel's server environment settings. Never use a `NEXT_PUBLIC_` variable or commit a key.
+3. Set these environment variables in Vercel, then redeploy:
+
+   | Variable | Value |
+   | --- | --- |
+   | `RESEND_API_KEY` | Your sending API key |
+   | `CONTACT_FROM` | A verified sender, for example `The Pass <inquiries@your-domain.com>` |
+   | `SITE_URL` | The canonical website origin, such as `https://your-domain.com`, without a path |
+
+4. Choose one canonical production hostname and redirect other aliases to it. The endpoint accepts the exact `SITE_URL` origin. For local development, use `http://localhost:3000`. Vercel preview deployments also accept their exact platform-provided `https://VERCEL_URL` hostname when `VERCEL_ENV=preview`. These two platform variables need no custom value; wildcard `*.vercel.app` origins are never allowed. A custom preview alias must instead be configured as that environment's `SITE_URL`.
+5. Configure persistent rate limiting before exposing the email endpoint publicly, as described below.
+6. Submit a real inquiry after deployment. Verify acceptance in Resend, arrival in Gmail, label application, and a reply draft addressed to the visitor. This launch check sends email, so it is deliberately separate from automated tests. Check Resend's delivery/bounce records if an accepted inquiry does not arrive.
+
+Without a domain, Resend's default testing sender is restricted to the account owner's verified email. It can be used only for an intentional, permitted smoke test to that account. Production requires a verified sending domain. See [Resend domain setup](https://resend.com/docs/dashboard/domains/introduction) and [the send-email API](https://resend.com/docs/api-reference/emails/send-email).
+
+## Gmail label and filter
+
+In Gmail, create the parent label **The Pass** and a child label **Website inquiries**. The full label name is `The Pass/Website inquiries`.
+
+Create a filter with:
+
+- **To:** `michaelpark20783@gmail.com`
+- **Subject:** `"The Pass website"`
+- **Action:** Apply the label `The Pass/Website inquiries`.
+- Leave **Skip the Inbox**, **Mark as read**, **Delete it**, and **Forward it** unchecked.
+
+After `CONTACT_FROM` is finalized, add its exact mailbox address to the filter's **From** condition to reduce unrelated matches. Do not put the visitor's email in **From**; it is the Reply-To address. Keep the subject condition so other email from your sending domain does not acquire the inquiry label. Labels organize messages; they are not proof a sender is trustworthy.
+
+Alternatively, Gmail's **Settings → See all settings → Filters and Blocked Addresses → Import filters** can import [`gmail-filter.xml`](../gmail-filter.xml). Review its conditions and actions before confirming. The import uses the subject and recipient and keeps messages unread in the Inbox. Add the verified sender condition afterward if desired. Existing matching email is labeled only if you choose to apply the filter to matching conversations.
+
+This repository contains an import file and instructions, not a claim that the Gmail account has been changed. Gmail filter behavior is documented in [Google's filter guide](https://support.google.com/mail/answer/6579).
+
+## Delivery behavior and abuse controls
+
+The endpoint rejects invalid fields, missing consent, populated honeypots, foreign origins, unsupported JSON, and bodies larger than 16 KiB. The byte limit applies while streaming, even if Content-Length is missing or false. Names and email header fields cannot contain control characters or newlines. Message content is plain text. No visitor data, provider response bodies, or API keys are logged by this application.
+
+Resend requests time out after eight seconds and never follow redirects. Each submission sends an `Idempotency-Key` derived from a UUID generated by the form. The form must preserve that UUID and the unchanged fields for a retry, and generate a new one when the user edits the submission. Resend keeps these keys for **24 hours**; a retry outside that window can send another email. A connection failure can occur after acceptance, so the UI reports delivery as unconfirmed and allows an unchanged retry. A concurrent submission conflict also asks the visitor to wait and retry unchanged. Only a confirmed `invalid_idempotent_request` error advises a new submission; an unknown conflict never asks the visitor to discard the existing key. There is no durable inquiry database or background delivery queue. See [Resend idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys).
+
+Origin checks and a honeypot reduce browser-driven spam, but a script can forge an Origin header and leave the honeypot empty. They are not a sufficient public production rate limit. Do not add an in-memory counter: Vercel instances do not share its state and instances restart.
+
+Before launch, configure **Vercel Firewall rate limiting** for the exact `/api/inquiry` path. Fixed Window limiting is available on all plans; Hobby includes one rule. In the project dashboard, open **Firewall → Configure → New Rule**, set conditions for pathname `/api/inquiry` and method `POST`, choose **Rate Limit**, group by source IP, and start with five requests per 60 seconds. The default rejection response is HTTP 429. Use **Review Changes → Publish** to activate the rule, then verify that excess requests are blocked before they reach Resend.
+
+Vercel counts these requests per region. This is not a global hard cap across all regions or all senders. Review the threshold against real traffic and shared-network users, monitor Resend usage, and set a provider spend/usage alert where available. Check your plan's current terms before publishing the rule. The repository does not activate this account-level control. If a deployment cannot provide durable rate limiting, provision a shared durable service before enabling the public form. See [Vercel rate limiting](https://vercel.com/docs/security/vercel-waf/rate-limiting).
+
+The website is a lead form. It accepts no attachments, does not start the consulting engine, and sends no automated client advice or confirmation email. Michael reviews inquiries and replies personally. Apply appropriate access and retention practices to the resulting Gmail and Resend records.
+
+## Verification
+
+`npm test` uses Node's built-in test runner and a mocked provider. It covers accepted delivery, fixed-recipient routing, retry payload stability, input/consent validation, CRLF injection, honeypots, configuration failures, origin and preview rules, actual streamed byte limits, provider errors and throttling, timeouts, and malformed provider receipts. Tests do not require a Resend key, domain, Google account, or network access.
