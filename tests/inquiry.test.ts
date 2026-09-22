@@ -9,7 +9,7 @@ import {
 
 const environment: InquiryEnvironment = {
   RESEND_API_KEY: "re_test_placeholder_not_a_real_key",
-  CONTACT_FROM: "The Pass <inquiries@example.com>",
+  CONTACT_FROM: "The Pass <inquiries@thepassconsulting.com>",
   SITE_URL: "https://thepass.example",
 };
 const valid = {
@@ -37,7 +37,7 @@ const shouldNotFetch: typeof fetch = async () => {
 };
 const accepted: typeof fetch = async () => Response.json({ id: "mock-email-id" });
 
-test("forwards only to Michael, puts visitor in reply_to, and confirms provider acceptance", async () => {
+test("sends from and to the business mailbox, puts visitor in reply_to, and confirms provider acceptance", async () => {
   let calls = 0;
   const fetcher: typeof fetch = async (url, init) => {
     calls++;
@@ -49,8 +49,8 @@ test("forwards only to Michael, puts visitor in reply_to, and confirms provider 
     assert.equal(headers.get("authorization"), `Bearer ${environment.RESEND_API_KEY}`);
     assert.equal(headers.get("idempotency-key"), `the-pass-inquiry/${valid.submissionId}`);
     const payload = JSON.parse(String(init?.body));
-    assert.deepEqual(payload.to, ["michaelpark20783@gmail.com"]);
-    assert.equal(payload.from, environment.CONTACT_FROM);
+    assert.deepEqual(payload.to, ["inquiries@thepassconsulting.com"]);
+    assert.equal(payload.from, "The Pass <inquiries@thepassconsulting.com>");
     assert.equal(payload.reply_to, valid.email);
     assert.equal(payload.subject, "[The Pass website] Example Restaurant");
     assert.match(payload.text, /Location: Riverside, CA/);
@@ -111,8 +111,13 @@ test("rejects CRLF injection even when a newline is at the end of a header field
   }
 });
 
-test("rejects recipient overrides and a populated honeypot without claiming success", async () => {
-  for (const addition of [{ to: "attacker@example.com" }, { website: "https://spam.example" }]) {
+test("rejects routing overrides and a populated honeypot without claiming success", async () => {
+  for (const addition of [
+    { to: "attacker@example.com" },
+    { from: "attacker@example.com" },
+    { reply_to: "attacker@example.com" },
+    { website: "https://spam.example" },
+  ]) {
     const result = await handleInquiry(request({ ...valid, ...addition }), environment, shouldNotFetch);
     assert.equal(result.status, 400);
     assert.equal((await result.json()).ok, false);
@@ -123,13 +128,41 @@ test("missing provider configuration and an invalid sender fail visibly", async 
   for (const overrides of [
     { RESEND_API_KEY: undefined },
     { CONTACT_FROM: undefined },
-    { CONTACT_FROM: "inquiries@example.com\r\nBcc: attacker@example.com" },
+    { CONTACT_FROM: "inquiries@thepassconsulting.com\r\nBcc: attacker@example.com" },
     { SITE_URL: undefined },
     { SITE_URL: "http://thepass.example" },
   ]) {
     const result = await handleInquiry(request(), { ...environment, ...overrides }, shouldNotFetch);
     assert.equal(result.status, 503);
     assert.equal((await result.json()).ok, false);
+  }
+});
+
+test("stale or lookalike sender identities fail before contacting Resend", async () => {
+  for (const sender of [
+    "legacy-owner@gmail.com",
+    "The Pass <inquiries@example.com>",
+    "The Pass <onboarding@resend.dev>",
+    "The Pass <hello@thepassconsulting.com>",
+    "The Pass <inquiries@thepassconsulting.com.attacker.example>",
+    "The Pass <inquiries@send.thepassconsulting.com>",
+  ]) {
+    const result = await handleInquiry(request(), { ...environment, CONTACT_FROM: sender }, shouldNotFetch);
+    assert.equal(result.status, 503, sender);
+    assert.equal((await result.json()).ok, false);
+  }
+});
+
+test("the business sender works with or without a display name", async () => {
+  for (const sender of ["inquiries@thepassconsulting.com", "The Pass Consulting <inquiries@thepassconsulting.com>"]) {
+    const fetcher: typeof fetch = async (_url, init) => {
+      const payload = JSON.parse(String(init?.body));
+      assert.equal(payload.from, sender);
+      assert.deepEqual(payload.to, ["inquiries@thepassconsulting.com"]);
+      assert.equal(payload.reply_to, valid.email);
+      return Response.json({ id: "mock-email-id" });
+    };
+    assert.equal((await handleInquiry(request(), { ...environment, CONTACT_FROM: sender }, fetcher)).status, 200);
   }
 });
 

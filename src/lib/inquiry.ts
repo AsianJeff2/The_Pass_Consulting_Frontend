@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL, INQUIRY_SUBJECT_PREFIX } from "./contact.ts";
+
 export const INQUIRY_FOCUS_OPTIONS = [
   "Operational diagnostic",
   "Labor & staffing",
@@ -40,8 +42,6 @@ export interface InquiryEnvironment {
 }
 
 export const MAX_INQUIRY_BYTES = 16_384;
-const RECIPIENT = "michaelpark20783@gmail.com";
-const SUBJECT_PREFIX = "[The Pass website]";
 const PROVIDER_TIMEOUT_MS = 8_000;
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FIELD_NAMES = new Set<InquiryField>([
@@ -187,9 +187,10 @@ function isAllowedOrigin(origin: string | null, environment: InquiryEnvironment,
 
 function validSender(value: string): boolean {
   if (hasUnsafeControl(value) || value.length > 350) return false;
-  if (isEmail(value)) return true;
   const displayAddress = /^[^<>]{1,80} <([^<>]+)>$/.exec(value);
-  return !!displayAddress && isEmail(displayAddress[1]);
+  const mailbox = isEmail(value) ? value : displayAddress?.[1];
+  // Fail closed if a deployment still has a personal or placeholder sender.
+  return !!mailbox && isEmail(mailbox) && mailbox.toLowerCase() === CONTACT_EMAIL;
 }
 
 function emailText(inquiry: Inquiry): string {
@@ -263,9 +264,9 @@ export async function handleInquiry(
       },
       body: JSON.stringify({
         from: sender,
-        to: [RECIPIENT],
+        to: [CONTACT_EMAIL],
         reply_to: inquiry.email,
-        subject: `${SUBJECT_PREFIX} ${inquiry.business}`,
+        subject: `${INQUIRY_SUBJECT_PREFIX} ${inquiry.business}`,
         text: emailText(inquiry),
       }),
       signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),

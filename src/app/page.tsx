@@ -1,3 +1,4 @@
+import { CONTACT_EMAIL, INQUIRY_MAILTO } from "@/lib/contact";
 import type { Metadata } from "next";
 import PassSculpture from "@/components/PassSculpture";
 import DeliverablePreview from "@/components/DeliverablePreview";
@@ -73,6 +74,6 @@ export default function Home() {
       ["What should I share to get started?", "A short description of your restaurant and what you’d like to work on is enough. Please keep confidential financial records, employee details, and other sensitive information out of the inquiry form. We can discuss appropriate next steps directly."],
     ].map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div></section>
 
-    <section className="inquiry chapter" id="inquiry" aria-labelledby="inquiry-title"><div className="container inquiry-grid"><div className="inquiry-copy"><span className="eyebrow">Let’s talk</span><h2 id="inquiry-title" data-reveal>What’s next<br />for <em>your<br className="inquiry-break" /> restaurant?</em></h2><p>Tell Michael a little about your business and what’s on your mind. We’ll take it from there.</p><div className="direct-email"><span>Prefer email?</span><a href="mailto:michaelpark20783@gmail.com?subject=%5BThe%20Pass%20website%5D%20Inquiry">michaelpark20783@gmail.com <Arrow diagonal /></a></div></div><div className="inquiry-card"><InquiryForm /></div></div></section>
+    <section className="inquiry chapter" id="inquiry" aria-labelledby="inquiry-title"><div className="container inquiry-grid"><div className="inquiry-copy"><span className="eyebrow">Let’s talk</span><h2 id="inquiry-title" data-reveal>What’s next<br />for <em>your<br className="inquiry-break" /> restaurant?</em></h2><p>Tell Michael a little about your business and what’s on your mind. We’ll take it from there.</p><div className="direct-email"><span>Prefer email?</span><a href={INQUIRY_MAILTO}>{CONTACT_EMAIL} <Arrow diagonal /></a></div></div><div className="inquiry-card"><InquiryForm /></div></div></section>
   </main>;
 }
