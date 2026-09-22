@@ -4,7 +4,7 @@
   <entry>
     <category term="filter" />
     <title>Mail Filter</title>
-    <apps:property name="to" value="michaelpark20783@gmail.com" />
+    <apps:property name="to" value="inquiries@thepassconsulting.com" />
     <apps:property name="subject" value="&quot;The Pass website&quot;" />
     <apps:property name="label" value="The Pass/Website inquiries" />
     <apps:property name="shouldArchive" value="false" />

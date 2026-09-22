@@ -1,5 +1,6 @@
 "use client";
 
+import { CONTACT_EMAIL, INQUIRY_MAILTO } from "@/lib/contact";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 const FOCUS_OPTIONS = [
@@ -199,14 +200,14 @@ export default function InquiryForm() {
         <span className="eyebrow">A good first step</span>
         <h3>Your inquiry is on its way to Michael.</h3>
         <p>Your message has been accepted for sending. Michael will reply to the email address you shared.</p>
-        <p className="form-note">If you need to follow up, email <a href="mailto:michaelpark20783@gmail.com?subject=%5BThe%20Pass%20website%5D%20Inquiry">michaelpark20783@gmail.com</a>.</p>
+        <p className="form-note">If you need to follow up, email <a href={INQUIRY_MAILTO}>{CONTACT_EMAIL}</a>.</p>
       </div>
     );
   }
 
   return (
     <form className="inquiry-form" method="post" action="/api/inquiry" onSubmit={handleSubmit} noValidate aria-busy={status === "sending"}>
-      <noscript><style>{".inquiry-form .form-fields, #inquiry-required { display: none; }"}</style><p className="form-status">This form needs JavaScript. Please <a href="mailto:michaelpark20783@gmail.com?subject=%5BThe%20Pass%20website%5D%20Inquiry">email Michael directly</a> to start a conversation.</p></noscript>
+      <noscript><style>{".inquiry-form .form-fields, #inquiry-required { display: none; }"}</style><p className="form-status">This form needs JavaScript. Please <a href={INQUIRY_MAILTO}>email Michael directly</a> to start a conversation.</p></noscript>
       <p className="form-note" id="inquiry-required">Fields marked with an asterisk (*) are required.</p>
 
       {status === "error" && (
@@ -221,7 +222,7 @@ export default function InquiryForm() {
               ))}
             </ul>
           )}
-          <p>Or email <a href="mailto:michaelpark20783@gmail.com?subject=%5BThe%20Pass%20website%5D%20Inquiry">michaelpark20783@gmail.com</a>.</p>
+          <p>Or email <a href={INQUIRY_MAILTO}>{CONTACT_EMAIL}</a>.</p>
         </div>
       )}
 
@@ -285,7 +286,7 @@ export default function InquiryForm() {
         </button>
       </fieldset>
 
-      <p className="form-note form-fallback">Prefer email? <a href="mailto:michaelpark20783@gmail.com?subject=%5BThe%20Pass%20website%5D%20Inquiry">Write to Michael directly &#8599;</a></p>
+      <p className="form-note form-fallback">Prefer email? <a href={INQUIRY_MAILTO}>Write to Michael directly &#8599;</a></p>
       <span className="sr-only" role="status" aria-live="polite">{status === "sending" ? "Sending your inquiry. Please wait." : ""}</span>
     </form>
   );
