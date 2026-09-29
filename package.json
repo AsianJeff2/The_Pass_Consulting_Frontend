@@ -12,7 +12,8 @@
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/inquiry.test.ts"
+    "test": "node --experimental-strip-types --test tests/inquiry.test.ts",
+    "check:email": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/check-email-config.ts"
   },
   "dependencies": {
     "next": "16.3.5",

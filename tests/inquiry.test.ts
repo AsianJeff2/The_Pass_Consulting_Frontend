@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   handleInquiry,
+  emailConfigurationIssues,
   MAX_INQUIRY_BYTES,
   validateInquiry,
   type InquiryEnvironment,
 } from "../src/lib/inquiry.ts";
+import { INQUIRY_GMAIL_URL, INQUIRY_MAILTO } from "../src/lib/contact.ts";
+import { configuredSiteOrigin, siteOrigin } from "../src/lib/site.ts";
 
 const environment: InquiryEnvironment = {
   RESEND_API_KEY: "re_test_placeholder_not_a_real_key",
@@ -36,6 +39,35 @@ const shouldNotFetch: typeof fetch = async () => {
   assert.fail("No provider request should be made for this input");
 };
 const accepted: typeof fetch = async () => Response.json({ id: "mock-email-id" });
+
+test("contact alternatives open drafts for the same business address and subject", () => {
+  const gmail = new URL(INQUIRY_GMAIL_URL);
+  assert.equal(gmail.origin, "https://mail.google.com");
+  assert.equal(gmail.searchParams.get("to"), "inquiries@thepassconsulting.com");
+  assert.equal(gmail.searchParams.get("su"), "[The Pass website] Inquiry");
+  assert.equal(gmail.searchParams.get("view"), "cm");
+  const emailApp = new URL(INQUIRY_MAILTO);
+  assert.equal(emailApp.protocol, "mailto:");
+  assert.equal(emailApp.pathname, gmail.searchParams.get("to"));
+  assert.equal(emailApp.searchParams.get("subject"), gmail.searchParams.get("su"));
+});
+
+test("configuration diagnostics return fixed codes without exposing supplied values", () => {
+  assert.deepEqual(emailConfigurationIssues(environment), []);
+  assert.deepEqual(emailConfigurationIssues({}), ["RESEND_API_KEY_MISSING", "CONTACT_FROM_MISSING"]);
+  const issues = emailConfigurationIssues({ RESEND_API_KEY: "private credential", CONTACT_FROM: "Private <someone@example.com>" });
+  assert.deepEqual(issues, ["RESEND_API_KEY_INVALID", "CONTACT_FROM_INVALID"]);
+  assert.doesNotMatch(JSON.stringify(issues), /private|someone|example/i);
+});
+
+test("canonical origin resolution falls back safely and rejects credential-bearing URLs", () => {
+  for (const value of [undefined, "", "not-a-url", "https://user:secret@example.com", "https://example.com/path", "https://example.com?secret=value", "https://example.com#fragment", "http://example.com"]) {
+    assert.equal(siteOrigin(value), "https://www.thepassconsulting.com");
+    assert.equal(configuredSiteOrigin(value), undefined);
+  }
+  assert.equal(siteOrigin("https://custom.example/"), "https://custom.example");
+  assert.equal(siteOrigin("http://localhost:3000"), "http://localhost:3000");
+});
 
 test("sends from and to the business mailbox, puts visitor in reply_to, and confirms provider acceptance", async () => {
   let calls = 0;
@@ -129,8 +161,6 @@ test("missing provider configuration and an invalid sender fail visibly", async 
     { RESEND_API_KEY: undefined },
     { CONTACT_FROM: undefined },
     { CONTACT_FROM: "inquiries@thepassconsulting.com\r\nBcc: attacker@example.com" },
-    { SITE_URL: undefined },
-    { SITE_URL: "http://thepass.example" },
   ]) {
     const result = await handleInquiry(request(), { ...environment, ...overrides }, shouldNotFetch);
     assert.equal(result.status, 503);
@@ -173,6 +203,50 @@ test("origin allowlist rejects other sites, absent origin, and attacker Vercel p
   const withoutOrigin = request();
   withoutOrigin.headers.delete("origin");
   assert.equal((await handleInquiry(withoutOrigin, environment, shouldNotFetch)).status, 403);
+});
+
+test("the live www site can submit when SITE_URL is absent or malformed", async () => {
+  for (const siteUrl of [undefined, "", "thepassconsulting.com", "https://www.thepassconsulting.com/inquiry", "http://thepassconsulting.com", "https://user:password@thepassconsulting.com"]) {
+    const result = await handleInquiry(request(valid, { Origin: "https://www.thepassconsulting.com" }), {
+      ...environment, SITE_URL: siteUrl, VERCEL_ENV: "production",
+    }, accepted);
+    assert.equal(result.status, 200, `SITE_URL case: ${siteUrl ?? "absent"}`);
+  }
+});
+
+test("a non-delivering probe reaches field validation with no SITE_URL", async () => {
+  const result = await handleInquiry(request({}, { Origin: "https://www.thepassconsulting.com" }), {
+    SITE_URL: undefined, VERCEL_ENV: "production",
+  }, shouldNotFetch);
+  assert.equal(result.status, 400);
+  assert.equal(typeof (await result.json()).fields.email, "string");
+});
+
+test("the verified www origin still works when SITE_URL names the redirecting apex", async () => {
+  const result = await handleInquiry(request(valid, { Origin: "https://www.thepassconsulting.com" }), {
+    ...environment, SITE_URL: "https://thepassconsulting.com", VERCEL_ENV: "production",
+  }, accepted);
+  assert.equal(result.status, 200);
+});
+
+test("the production fallback never trusts request hosts or arbitrary origins", async () => {
+  for (const origin of ["https://attacker.example", "https://www.thepassconsulting.com.attacker.example", "https://attacker.vercel.app", "http://www.thepassconsulting.com", "null"]) {
+    const result = await handleInquiry(request(valid, {
+      Origin: origin, Host: "www.thepassconsulting.com", "X-Forwarded-Host": "www.thepassconsulting.com",
+    }), { ...environment, SITE_URL: undefined }, shouldNotFetch);
+    assert.equal(result.status, 403, origin);
+  }
+  const withoutOrigin = request();
+  withoutOrigin.headers.delete("origin");
+  assert.equal((await handleInquiry(withoutOrigin, { ...environment, SITE_URL: undefined }, shouldNotFetch)).status, 403);
+});
+
+test("exact Vercel preview and explicit local origins work without widening the allowlist", async () => {
+  const preview = { ...environment, SITE_URL: undefined, VERCEL_ENV: "preview", VERCEL_URL: "the-pass-abc123.vercel.app" };
+  assert.equal((await handleInquiry(request(valid, { Origin: "https://the-pass-abc123.vercel.app" }), preview, accepted)).status, 200);
+  assert.equal((await handleInquiry(request(valid, { Origin: "https://the-pass-other.vercel.app" }), preview, shouldNotFetch)).status, 403);
+  assert.equal((await handleInquiry(request(valid, { Origin: "http://localhost:3000" }), { ...environment, SITE_URL: "http://localhost:3000" }, accepted)).status, 200);
+  assert.equal((await handleInquiry(request(valid, { Origin: "http://127.0.0.1:3000" }), { ...environment, SITE_URL: "http://localhost:3000" }, shouldNotFetch)).status, 403);
 });
 
 test("permits only the exact platform-provided preview origin in preview mode", async () => {
