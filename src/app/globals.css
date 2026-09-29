@@ -990,6 +990,44 @@ h2 em {
   width: 20px;
 }
 
+.email-options {
+  margin-top: 8px;
+}
+
+.email-options-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 18px;
+}
+
+.email-options-actions a,.email-options-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.email-copy-status {
+  color: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.email-copy-status:not(:empty) {
+  margin-top: 8px;
+}
+
 .inquiry-card {
   background: #f9faf380;
   border: 1px solid #fff9;

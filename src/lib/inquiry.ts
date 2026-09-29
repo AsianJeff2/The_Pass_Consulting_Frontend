@@ -1,4 +1,5 @@
 import { CONTACT_EMAIL, INQUIRY_SUBJECT_PREFIX } from "./contact.ts";
+import { PRODUCTION_SITE_ORIGIN, siteOrigin } from "./site.ts";
 
 export const INQUIRY_FOCUS_OPTIONS = [
   "Operational diagnostic",
@@ -162,22 +163,10 @@ async function readJsonWithinLimit(body: ReadableStream<Uint8Array> | null, limi
   return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown;
 }
 
-function configuredOrigin(siteUrl: string | undefined): string | null {
-  if (!siteUrl) return null;
-  try {
-    const url = new URL(siteUrl);
-    const local = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
-    if (url.protocol !== "https:" && !(local && url.protocol === "http:")) return null;
-    if (url.username || url.password || url.pathname !== "/" || url.search || url.hash) return null;
-    return url.origin;
-  } catch {
-    return null;
-  }
-}
-
-function isAllowedOrigin(origin: string | null, environment: InquiryEnvironment, siteOrigin: string): boolean {
+function isAllowedOrigin(origin: string | null, environment: InquiryEnvironment): boolean {
   if (!origin) return false;
-  if (origin === siteOrigin) return true;
+  // Keep the deployed www site usable even when SITE_URL is absent or names the apex redirect.
+  if (origin === PRODUCTION_SITE_ORIGIN || origin === siteOrigin(environment.SITE_URL)) return true;
   if (environment.VERCEL_ENV !== "preview" || !environment.VERCEL_URL) return false;
   // Trust the platform-injected deployment hostname, not a wildcard for other tenants.
   const host = environment.VERCEL_URL;
@@ -191,6 +180,19 @@ function validSender(value: string): boolean {
   const mailbox = isEmail(value) ? value : displayAddress?.[1];
   // Fail closed if a deployment still has a personal or placeholder sender.
   return !!mailbox && isEmail(mailbox) && mailbox.toLowerCase() === CONTACT_EMAIL;
+}
+
+export type EmailConfigurationIssue = "RESEND_API_KEY_MISSING" | "RESEND_API_KEY_INVALID" | "CONTACT_FROM_MISSING" | "CONTACT_FROM_INVALID";
+
+/** Returns fixed codes only, never environment values or credentials. */
+export function emailConfigurationIssues(environment: InquiryEnvironment): EmailConfigurationIssue[] {
+  const issues: EmailConfigurationIssue[] = [];
+  const { RESEND_API_KEY: key, CONTACT_FROM: sender } = environment;
+  if (!key) issues.push("RESEND_API_KEY_MISSING");
+  else if (/\s/.test(key) || key.length > 500) issues.push("RESEND_API_KEY_INVALID");
+  if (!sender) issues.push("CONTACT_FROM_MISSING");
+  else if (!validSender(sender)) issues.push("CONTACT_FROM_INVALID");
+  return issues;
 }
 
 function emailText(inquiry: Inquiry): string {
@@ -220,9 +222,7 @@ export async function handleInquiry(
   fetcher: typeof fetch = fetch,
 ): Promise<Response> {
   if (request.method !== "POST") return error(405, "Use the inquiry form to submit a message.", { Allow: "POST" });
-  const siteOrigin = configuredOrigin(environment.SITE_URL);
-  if (!siteOrigin) return error(503, "The inquiry form is being configured. Please email Michael directly.");
-  if (!isAllowedOrigin(request.headers.get("origin"), environment, siteOrigin)) {
+  if (!isAllowedOrigin(request.headers.get("origin"), environment)) {
     return error(403, "Please submit your inquiry from The Pass website.");
   }
   if (request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
@@ -249,8 +249,8 @@ export async function handleInquiry(
 
   const apiKey = environment.RESEND_API_KEY;
   const sender = environment.CONTACT_FROM;
-  if (!apiKey || /\s/.test(apiKey) || apiKey.length > 500 || !sender || !validSender(sender)) {
-    return error(503, "The inquiry form is being configured. Please email Michael directly.");
+  if (!apiKey || !sender || emailConfigurationIssues(environment).length > 0) {
+    return error(503, "The inquiry form is temporarily unavailable. Your details are still here. Please use the email options below to contact Michael.");
   }
 
   const inquiry = validated.inquiry;

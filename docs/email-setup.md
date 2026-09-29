@@ -32,13 +32,32 @@ See [Google Workspace Gmail activation and MX setup](https://knowledge.workspace
    | --- | --- |
    | `RESEND_API_KEY` | Your sending API key |
    | `CONTACT_FROM` | `The Pass <inquiries@thepassconsulting.com>` |
-   | `SITE_URL` | Your canonical website origin, for example `https://thepassconsulting.com`, without a path; use the `www` origin instead if that is canonical |
+   | `SITE_URL` | Optional: `https://www.thepassconsulting.com`. If absent or invalid, this verified production origin is used. Local development requires an explicit loopback origin. |
 
-4. Update existing values in **Production** and any **Preview/Development** environments where email is enabled. A PR does not overwrite saved Vercel values. Redeploy each affected environment after saving. Choose one canonical production hostname and redirect other aliases to it. The endpoint accepts the exact `SITE_URL` origin. For local development, use `http://localhost:3000`. Vercel preview deployments also accept their exact platform-provided `https://VERCEL_URL` hostname when `VERCEL_ENV=preview`. These two platform variables need no custom value; wildcard `*.vercel.app` origins are never allowed. A custom preview alias must instead be configured as that environment's `SITE_URL`. A configured preview sends real mail to the business mailbox; omit the Resend key in previews where sending should stay disabled.
+4. Update existing values in **Production** and any **Preview/Development** environments where email is enabled. A PR does not overwrite saved Vercel values. Redeploy each affected environment after saving. The public apex domain redirects to `www`; use `https://www.thepassconsulting.com` as canonical. The endpoint always accepts that exact built-in production origin and also accepts a valid explicit `SITE_URL` origin. Missing or malformed `SITE_URL` no longer disables form processing. It never derives trust from `Host` or `X-Forwarded-Host`. For local development, use the exact loopback origin you browse, such as `http://localhost:3000`. Vercel previews also accept their exact platform-provided `https://VERCEL_URL` hostname when `VERCEL_ENV=preview`. These two platform variables need no custom value; wildcard `*.vercel.app` origins are never allowed. A custom preview alias must instead be configured as that environment's `SITE_URL`. A configured preview sends real mail to the business mailbox; omit the Resend key in previews where sending should stay disabled.
 5. Configure persistent rate limiting before exposing the email endpoint publicly, as described below.
 6. Follow the live delivery checklist below after deployment. Check Resend's delivery/bounce records if an accepted inquiry does not arrive.
 
+Preview builds without an explicit `SITE_URL` use the production canonical URL. Existing preview `noindex` rules remain in place.
+
 The application does not fall back to a personal address or Resend's default testing sender. Until the mailbox and verified domain are ready, use the mocked tests below. See [the send-email API](https://resend.com/docs/api-reference/emails/send-email) for From and Reply-To behavior.
+
+## Diagnose a contact error without sending mail
+
+Run `npm run check:email` from the checkout. It loads `.env.local` if present and respects values already set in the shell. It prints the resolved site origin and fixed configuration issue codes, never a key or sender value. Exit 1 means a required email setting is missing or invalid; exit 0 means only that the local values passed syntax checks. It does not retrieve Vercel settings or contact Resend. Confirm the same values are configured for the deployed environment and redeploy after changes.
+
+| Result | Next check |
+| --- | --- |
+| `RESEND_API_KEY_MISSING` / `RESEND_API_KEY_INVALID` | Add the server-only Resend sending key without extra whitespace. Never paste it into a PR or browser code. |
+| `CONTACT_FROM_MISSING` / `CONTACT_FROM_INVALID` | Set `The Pass <inquiries@thepassconsulting.com>` exactly. |
+| Form HTTP 403 | Confirm the page origin is the built-in `www` domain, a valid configured `SITE_URL`, or the exact Vercel preview hostname. |
+| Form HTTP 503 after this fix | Check required sender/key settings and the deployment environment scope. The form preserves input and offers email alternatives. |
+| Form HTTP 502 | Inspect Resend's authenticated dashboard for domain verification, key permissions and delivery errors; provider errors stay private. |
+| Email link does nothing | Use **Open Gmail** in a browser or **Copy email address** for your preferred email service. `mailto:` needs a configured email application or browser handler. |
+
+The Gmail alternative opens a new tab, may require Google sign-in, and prefills the public recipient and website subject. It does not send a message or copy form fields automatically. Copying the address reports success only after the clipboard operation succeeds; if copying is blocked, the address remains visible for manual selection. A failed form submission keeps the typed details so the visitor can copy their message. These options are available in the contact section, footer, and form states. The Gmail link also renders without JavaScript; the copy button is hidden in that case.
+
+The [September 28 diagnosis](contact-failure-diagnosis.md) records the production reproduction, evidence boundaries, changes, and regression checks.
 
 ## Business Gmail label and filter
 
@@ -85,4 +104,4 @@ The website is a lead form. It accepts no attachments, does not start the consul
 
 ## Verification
 
-`npm test` uses Node's built-in test runner and a mocked provider. It covers business sender and recipient routing, visitor Reply-To, rejection of stale sender identities and request routing overrides, retry payload stability, input/consent validation, CRLF injection, honeypots, configuration failures, origin and preview rules, actual streamed byte limits, provider errors and throttling, timeouts, and malformed provider receipts. Tests do not require a Resend key, domain, Google account, or network access.
+`npm test` uses Node's built-in test runner and a mocked provider. It covers business sender and recipient routing, visitor Reply-To, rejection of stale sender identities and request routing overrides, retry payload stability, input/consent validation, CRLF injection, honeypots, provider configuration failures, missing/malformed site URL fallback, exact origin and preview rules, diagnostic redaction, email draft targets, actual streamed byte limits, provider errors and throttling, timeouts, and malformed provider receipts. Tests do not require a Resend key, domain, Google account, or network access.

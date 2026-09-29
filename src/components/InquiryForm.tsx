@@ -1,6 +1,7 @@
 "use client";
 
 import { CONTACT_EMAIL, INQUIRY_MAILTO } from "@/lib/contact";
+import EmailOptions from "./EmailOptions";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 const FOCUS_OPTIONS = [
@@ -196,11 +197,14 @@ export default function InquiryForm() {
 
   if (status === "success") {
     return (
-      <div className="inquiry-form form-success" ref={successRef} tabIndex={-1} role="status">
-        <span className="eyebrow">A good first step</span>
-        <h3>Your inquiry is on its way to Michael.</h3>
-        <p>Your message has been accepted for sending. Michael will reply to the email address you shared.</p>
-        <p className="form-note">If you need to follow up, email <a href={INQUIRY_MAILTO}>{CONTACT_EMAIL}</a>.</p>
+      <div className="inquiry-form form-success">
+        <div ref={successRef} tabIndex={-1} role="status">
+          <span className="eyebrow">A good first step</span>
+          <h3>Your inquiry is on its way to Michael.</h3>
+          <p>Your message has been accepted for sending. Michael will reply to the email address you shared.</p>
+          <p className="form-note">If you need to follow up, email <a href={INQUIRY_MAILTO}>{CONTACT_EMAIL}</a>.</p>
+        </div>
+        <EmailOptions />
       </div>
     );
   }
@@ -211,18 +215,21 @@ export default function InquiryForm() {
       <p className="form-note" id="inquiry-required">Fields marked with an asterisk (*) are required.</p>
 
       {status === "error" && (
-        <div className="form-status form-status-error" role="alert" tabIndex={-1} ref={summaryRef}>
-          <p>{statusMessage}</p>
-          {Object.keys(errors).some((field) => field !== "website") && (
-            <ul>
-              {(Object.keys(errors) as FieldName[]).filter((field) => field !== "website").map((field) => (
-                <li key={field}>
-                  <a href={`#inquiry-${field}`}>{FIELD_LABELS[field]}: {errors[field]}</a>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p>Or email <a href={INQUIRY_MAILTO}>{CONTACT_EMAIL}</a>.</p>
+        <div className="form-status form-status-error">
+          <div role="alert" tabIndex={-1} ref={summaryRef}>
+            <p>{statusMessage}</p>
+            {Object.keys(errors).some((field) => field !== "website") && (
+              <ul>
+                {(Object.keys(errors) as FieldName[]).filter((field) => field !== "website").map((field) => (
+                  <li key={field}>
+                    <a href={`#inquiry-${field}`}>{FIELD_LABELS[field]}: {errors[field]}</a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p>Or email <a href={INQUIRY_MAILTO}>{CONTACT_EMAIL}</a>.</p>
+          </div>
+          <EmailOptions />
         </div>
       )}
 
@@ -286,7 +293,7 @@ export default function InquiryForm() {
         </button>
       </fieldset>
 
-      <p className="form-note form-fallback">Prefer email? <a href={INQUIRY_MAILTO}>Write to Michael directly &#8599;</a></p>
+      {status !== "error" && <div className="form-fallback"><p className="form-note">Prefer email? <a href={INQUIRY_MAILTO}>Write to Michael directly &#8599;</a></p><EmailOptions /></div>}
       <span className="sr-only" role="status" aria-live="polite">{status === "sending" ? "Sending your inquiry. Please wait." : ""}</span>
     </form>
   );
