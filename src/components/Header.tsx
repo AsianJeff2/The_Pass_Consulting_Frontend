@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Arrow, Brand } from "./Brand";
 
 export default function Header() {
@@ -33,7 +34,7 @@ export default function Header() {
       <div className="header-inner">
         <Brand />
         <nav className="desktop-nav" aria-label="Main navigation">
-          <a href={href("expertise")}>Expertise</a><a href={href("approach")}>Our approach</a><a href={href("about")}>About</a>
+          <a href={href("expertise")}>Expertise</a><Link href="/services" aria-current={pathname === "/services" ? "page" : undefined}>Services</Link><a href={href("approach")}>Our approach</a><a href={href("about")}>About</a>
         </nav>
         <a className="header-cta" href={href("inquiry")}>Start a conversation <Arrow diagonal /></a>
         <button ref={toggle} className="menu-toggle" type="button" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls={open ? "mobile-navigation" : undefined} onClick={() => setOpen(!open)}>
@@ -41,6 +42,7 @@ export default function Header() {
         </button>
       </div>
       {open && <nav ref={panel} id="mobile-navigation" className="mobile-nav" aria-label="Mobile navigation">
+        <Link href="/services" aria-current={pathname === "/services" ? "page" : undefined} onClick={() => setOpen(false)}>Services<Arrow /></Link>
         {[["expertise", "Expertise"], ["approach", "Our approach"], ["about", "About"], ["inquiry", "Start a conversation"]].map(([id, label]) => <a key={id} href={href(id)} onClick={() => setOpen(false)}>{label}<Arrow /></a>)}
       </nav>}
     </header>

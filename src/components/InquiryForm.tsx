@@ -269,7 +269,7 @@ export default function InquiryForm() {
         <div className="form-field">
           <label htmlFor="inquiry-message">What is happening in your business? <span aria-hidden="true">*</span></label>
           <textarea id="inquiry-message" name="message" rows={4} value={values.message} onChange={(event) => updateField("message", event.target.value)} required minLength={20} maxLength={3000} aria-invalid={Boolean(errors.message)} aria-describedby={fieldDescription("message", "inquiry-message-hint")} placeholder="Tell us what is working, what feels difficult, and what you would like to change." />
-          <span className="field-hint" id="inquiry-message-hint">A few sentences are enough. Please leave out confidential business or guest information.</span>
+          <span className="field-hint" id="inquiry-message-hint">Share a short overview. Leave out financial records, bank or card details, passwords, and information about employees or guests. Michael can discuss a secure way to share records after you agree on an engagement.</span>
           {fieldError("message")}
         </div>
 
@@ -284,7 +284,7 @@ export default function InquiryForm() {
             <span>I agree that Michael may use these details to respond to my inquiry. <span aria-hidden="true">*</span></span>
           </label>
           {fieldError("consent")}
-          <p className="form-note">Read our <a href="/privacy">privacy notice</a>.</p>
+          <p className="form-note">Michael will use your details to discuss this inquiry. You will not join a marketing list. Read the <a href="/privacy">privacy notice</a>.</p>
         </div>
 
         <button className="button-primary" type="submit" disabled={status === "sending"}>
