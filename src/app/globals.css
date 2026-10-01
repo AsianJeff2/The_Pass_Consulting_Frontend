@@ -1287,6 +1287,8 @@ h2 em {
 
 .footer-bottom {
   display: flex;
+  flex-wrap: wrap;
+  padding-block: 12px;
   justify-content: space-between;
   align-items: center;
   gap: 24px;
@@ -1350,6 +1352,50 @@ h2 em {
 
 .legal-page>.text-link,.legal-page>.button-primary {
   margin-top: 24px;
+}
+
+
+.legal-breadcrumb ol,.legal-navigation ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.legal-breadcrumb ol {
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+.legal-breadcrumb a,.legal-navigation a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.legal-navigation {
+  margin: 28px 0;
+  padding-block: 12px;
+  border-block: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.legal-navigation ul {
+  margin: 0;
+}
+
+.legal-navigation a {
+  padding: 8px 12px;
+}
+
+.legal-navigation a[aria-current="page"] {
+  background: var(--paper-dark);
+  color: var(--forest);
+  text-decoration-thickness: 2px;
 }
 
 @media (min-width: 1600px) {

@@ -1,21 +1,14 @@
 import { CONTACT_EMAIL, INQUIRY_MAILTO } from "@/lib/contact";
-import type { Metadata } from "next";
+import Link from "next/link";
 import PassSculpture from "@/components/PassSculpture";
 import DeliverablePreview from "@/components/DeliverablePreview";
 import InquiryForm from "@/components/InquiryForm";
 import EmailOptions from "@/components/EmailOptions";
 import ScrollSequence from "@/components/ScrollSequence";
 import { Arrow } from "@/components/Brand";
-import { publicSiteUrl } from "@/lib/site";
+import { HOME_TITLE, HOME_DESCRIPTION, SERVICES, pageMetadata, serializeStructuredData, servicePath, websiteStructuredData } from "@/lib/seo";
 
-export const metadata: Metadata = { alternates: { canonical: publicSiteUrl()?.href } };
-
-const services = [
-  { title: "The whole operation", tag: "Operational diagnostics", text: "Bring your numbers, processes, and owner perspective together to understand where to focus." },
-  { title: "Your team, in rhythm", tag: "Labor & staffing", text: "Look at scheduling alongside demand. Understand how staffing patterns support service, and where the fit could be better." },
-  { title: "Room in the margins", tag: "Food & operating costs", text: "Examine the relationship between food costs, labor, and sales to make sense of your cost structure." },
-  { title: "The patterns behind demand", tag: "Sales & guest demand", text: "Explore sales by day and daypart, alongside repeat-guest patterns. Find the questions that matter for your next decision." },
-];
+export const metadata = pageMetadata(HOME_TITLE, HOME_DESCRIPTION, "/");
 
 const process = [
   ["Listen", "First, your perspective.", "We start with your goals, your constraints, and what running the business feels like today."],
@@ -25,11 +18,13 @@ const process = [
 ];
 
 export default function Home() {
+  const structuredData = websiteStructuredData();
   return <main id="main" className="home-page">
+    {structuredData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeStructuredData(structuredData) }} />}
     <ScrollSequence />
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-stage container">
-        <div className="hero-topline"><span className="eyebrow">Independent hospitality consulting</span><span>Southern California & beyond</span></div>
+        <div className="hero-topline"><span className="eyebrow">Independent restaurant consulting</span><span>Southern California & beyond</span></div>
         <div className="hero-copy">
           <h1 id="hero-title" data-reveal><span className="reveal-line"><span>Good hospitality.</span></span><span className="reveal-line"><span>Stronger <em>business.</em></span></span></h1>
           <p className="hero-intro">You put everything into your restaurant.<br /> Let’s bring the same care to the business behind it.</p>
@@ -44,10 +39,10 @@ export default function Home() {
       <div className="container">
         <div className="section-meta"><span className="eyebrow">Where we can help</span><span className="section-rule" data-rule aria-hidden="true" /></div>
         <div className="expertise-intro"><h2 id="expertise-title" data-reveal><span className="reveal-line"><span>A wider view.</span></span><span className="reveal-line"><span><em>A sharper focus.</em></span></span></h2><p>A restaurant is a connected business. We help you understand how the pieces work together, and where a closer look can make a difference.</p></div>
-        <div className="service-list">{services.map((service, index) => <article className="service-row" key={service.tag} data-reveal>
-          <span className="service-number" aria-hidden="true">0{index + 1}</span><div className="service-title"><span className="eyebrow">{service.tag}</span><h3>{service.title}</h3></div><p>{service.text}</p>
+        <div className="service-list">{SERVICES.map((service, index) => <article className="service-row" key={service.tag} data-reveal>
+          <span className="service-number" aria-hidden="true">0{index + 1}</span><div className="service-title"><Link className="eyebrow" href={servicePath(service)} style={{ display: "inline-flex", alignItems: "center", minHeight: "44px", textDecoration: "underline", textUnderlineOffset: "4px" }}>{service.tag}</Link><h3>{service.title}</h3></div><p>{service.text}</p>
         </article>)}</div>
-        <div className="expertise-end"><p>One location or a growing group.<br />We start with where you are.</p><a className="text-link" href="#inquiry">Discuss your operation <Arrow diagonal /></a></div>
+        <div className="expertise-end"><p>One location or a growing group.<br />We start with where you are.</p><Link className="text-link" href="/services">Explore the services <Arrow diagonal /></Link></div>
       </div>
     </section>
 
